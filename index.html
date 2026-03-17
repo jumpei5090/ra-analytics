@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リウマチ生物学的製剤 薬剤別処方推移 6県分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --card2: #f8fafc;
+            --border: #e2e8f0;
+            --border2: #cbd5e1;
+            --text: #1e293b;
+            --text2: #334155;
+            --muted: #64748b;
+            --muted2: #94a3b8;
+            --blue: #2563eb;
+            --blue-light: #dbeafe;
+            --cyan: #0891b2;
+            --violet: #7c3aed;
+            --emerald: #059669;
+            --emerald-light: #d1fae5;
+            --amber: #d97706;
+            --amber-light: #fef3c7;
+            --rose: #e11d48;
+            --rose-light: #ffe4e6;
+            --orange: #ea580c;
+            --pink: #be185d;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        body::before {
+            display: none;
+        }
+
+        .wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 20px 24px;
+        }
+
+        /* ヘッダー */
+        .header {
+            text-align: center;
+            padding: 32px 0 28px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--emerald-light);
+            border: 1px solid #6ee7b7;
+            border-radius: 100px;
+            padding: 5px 14px;
+            font-size: 11px;
+            color: var(--emerald);
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--emerald);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
+        }
+
+        h1 {
+            font-size: clamp(18px, 3vw, 30px);
+            font-weight: 900;
+            color: var(--text);
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+
+        h1 span {
+            color: var(--blue);
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        /* データ注記 */
+        .data-note {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid var(--blue);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 11.5px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .data-note strong {
+            color: var(--blue);
+        }
+
+        /* コントロール */
+        .controls {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .control-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-title::before {
+            content: '🎛️';
+            font-size: 14px;
+        }
+
+        .drug-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-bottom: 16px;
+        }
+
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 13px;
+            border-radius: 100px;
+            border: 1.5px solid;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all .18s;
+            user-select: none;
+            background: var(--card);
+        }
+
+        .pill.active {
+            opacity: 1;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pill.inactive {
+            opacity: 0.3;
+            filter: grayscale(0.7);
+            background: #f1f5f9;
+        }
+
+        .pill .pill-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .pill:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .pref-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            align-items: center;
+        }
+
+        .pref-label {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+            margin-right: 2px;
+        }
+
+        .pref-btn {
+            padding: 5px 12px;
+            border-radius: 7px;
+            border: 1.5px solid var(--border2);
+            background: var(--card2);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            transition: all .18s;
+        }
+
+        .pref-btn.active {
+            background: var(--blue-light);
+            border-color: #93c5fd;
+            color: var(--blue);
+        }
+
+        .view-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .view-label {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .segmented {
+            display: flex;
+            background: var(--card2);
+            border: 1.5px solid var(--border2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .seg-btn {
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: all .18s;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        .seg-btn+.seg-btn {
+            border-left: 1px solid var(--border);
+        }
+
+        .seg-btn.active {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        /* チャートカード */
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--blue), #7c3aed, var(--emerald));
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .chart-title span {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        /* KPIカード */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        @media(max-width:800px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border-top: 3px solid var(--blue);
+        }
+
+        .stat-card:nth-child(2) {
+            border-top-color: var(--emerald);
+        }
+
+        .stat-card:nth-child(3) {
+            border-top-color: var(--violet);
+        }
+
+        .stat-card:nth-child(4) {
+            border-top-color: var(--amber);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--text);
+        }
+
+        .stat-sub {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        /* テーブル */
+        .tbl-wrap {
+            overflow-x: auto;
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 3px;
+            font-size: 12px;
+            min-width: 700px;
+        }
+
+        .tbl th {
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: 8px 10px;
+            text-align: right;
+            font-size: 10px;
+            font-weight: 700;
+            background: var(--card2);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tbl th:first-child {
+            text-align: left;
+            border-radius: 6px 0 0 6px;
+        }
+
+        .tbl th:nth-child(2) {
+            text-align: left;
+        }
+
+        .tbl th:last-child {
+            border-radius: 0 6px 6px 0;
+        }
+
+        .tbl td {
+            padding: 10px 10px;
+            background: #fafbfc;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+            color: var(--text2);
+        }
+
+        .tbl td:first-child {
+            text-align: left;
+            border-radius: 6px 0 0 6px;
+            border-left: 3px solid transparent;
+        }
+
+        .tbl td:nth-child(2) {
+            text-align: left;
+        }
+
+        .tbl td:last-child {
+            border-radius: 0 6px 6px 0;
+        }
+
+        .tbl tr:hover td {
+            background: #eff6ff;
+        }
+
+        .tbl tr:hover td:first-child {
+            border-left-color: var(--blue);
+        }
+
+        .dot-sm {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 7px;
+            vertical-align: middle;
+        }
+
+        /* タグ */
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .tag-tnf {
+            background: var(--rose-light);
+            color: var(--rose);
+        }
+
+        .tag-il6 {
+            background: #ede9fe;
+            color: var(--violet);
+        }
+
+        .tag-t {
+            background: var(--emerald-light);
+            color: var(--emerald);
+        }
+
+        .tag-jak {
+            background: var(--amber-light);
+            color: var(--amber);
+        }
+
+        .tag-bs {
+            background: #e0f2fe;
+            color: var(--cyan);
+            border: 1px solid #bae6fd;
+        }
+
+        /* 仕切り線 */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 12px 0;
+        }
+
+        /* フッター */
+        .footer {
+            margin-top: 40px;
+            padding: 30px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .footer a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--card2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--muted2);
+        }
+
+        /* ============================================================
+         * レスポンシブ対応 — モバイル (< 768px)
+         * ============================================================ */
+        @media (max-width: 767px) {
+            .wrap { padding: 10px 12px; }
+
+            /* ヘッダー */
+            .header { padding: 18px 0 14px; margin-bottom: 14px; }
+            h1 { font-size: 15px; }
+            .subtitle { font-size: 10px; }
+            .badge { font-size: 10px; padding: 4px 10px; margin-bottom: 8px; }
+            .data-note { font-size: 10.5px; padding: 10px 12px; }
+
+            /* KPIカード */
+            .stats-row { gap: 8px; margin-bottom: 12px; }
+            .stat-card { padding: 10px 12px; }
+            .stat-value { font-size: 18px; }
+            .stat-label, .stat-sub { font-size: 9px; }
+
+            /* コントロールパネル: 折りたたみ */
+            .controls { padding: 12px 14px; margin-bottom: 12px; }
+            .control-title { margin-bottom: 0; cursor: pointer; justify-content: space-between; }
+            .ctrl-toggle-icon { margin-left: auto; font-style: normal; font-size: 13px;
+                                transition: transform .25s; display: inline-block; }
+            .ctrl-toggle-icon.open { transform: rotate(180deg); }
+            .controls-body { overflow: hidden; max-height: 0; transition: max-height .35s ease; padding-top: 0; }
+            .controls-body.open { max-height: 2400px; padding-top: 12px; }
+
+            /* ピル・ボタン: タップ領域拡大 */
+            .pill { padding: 9px 12px; font-size: 12px; min-height: 38px; }
+            .pref-btn { padding: 9px 14px; font-size: 12px; min-height: 38px; }
+
+            /* 表示オプション行: 縦並び */
+            .view-row { flex-direction: column; align-items: stretch; gap: 8px; }
+            .view-row .view-label { margin-left: 0 !important; }
+            .segmented { width: 100%; display: flex; }
+            .seg-btn { flex: 1; padding: 9px 4px; font-size: 11px; }
+
+            /* 患者属性セクション: 1列 */
+            #demographicSection { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+            /* チャートカード */
+            .chart-card { padding: 12px 14px; margin-bottom: 12px; }
+            .chart-title { font-size: 13px; margin-bottom: 10px; }
+            .chart-title span { display: none; }
+
+            /* フッター */
+            .footer { font-size: 10.5px; margin-top: 20px; padding: 20px 0; }
+
+            /* CSVボタン: 全幅 */
+            #btnDownloadCSV { width: 100%; justify-content: center; font-size: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+
+        <div class="header">
+            <div class="badge">🧬 NDBオープンデータ 実データ分析</div>
+            <h1>リウマチ生物学的製剤<br>薬剤別 処方推移 6県比較</h1>
+            <p class="subtitle">厚生労働省 NDBオープンデータ（第1〜10回）｜新潟・富山・石川・福井・山梨・長野｜2014〜2023年度</p>
+        </div>
+
+        <div class="data-note">
+            📌 <strong>データ出典</strong>：厚生労働省 NDBオープンデータ 注射薬・都道府県別薬効分類別数量（第1〜10回）から実際にダウンロード・集計<br>
+            📌 薬効分類 <strong>239・399・639</strong> から主要リウマチ生物学的製剤11薬剤を抽出（先発品・バイオシミラー別）<br>
+            ⚠️ NDBは「-」（400件未満）を0として計上。実際の値はそれ以下の場合があります。
+        </div>
+
+        <!-- 統計サマリー -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card">
+                <div class="stat-label">2022年 6県最大</div>
+                <div class="stat-value" id="stat1" style="color:var(--violet)">-</div>
+                <div class="stat-sub" id="stat1-sub">選択薬剤の最大処方量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">8年成長率（最大）</div>
+                <div class="stat-value" id="stat2" style="color:var(--emerald)">-</div>
+                <div class="stat-sub" id="stat2-sub">2014→2022変化率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2022年 トップ県</div>
+                <div class="stat-value" id="stat3" style="color:var(--blue);">-</div>
+                <div class="stat-sub" id="stat3-sub">最大処方量の都道府県</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">表示中の薬剤数</div>
+                <div class="stat-value" id="stat4" style="color:var(--amber)">-</div>
+                <div class="stat-sub">選択薬剤数</div>
+            </div>
+        </div>
+
+        <!-- コントロールパネル -->
+        <div class="controls">
+            <div class="control-title" id="ctrlTitle" onclick="toggleControls()">
+                薬剤・表示オプション選択
+                <i class="ctrl-toggle-icon open" id="ctrlIcon">▼</i>
+            </div>
+
+            <div class="controls-body open" id="ctrlBody">
+                <div class="drug-pills" id="drugPills"></div>
+
+                <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+                    <div class="pref-row">
+                        <span class="pref-label">表示県：</span>
+                        <div id="prefBtns"></div>
+                    </div>
+                    <div class="view-row">
+                        <span class="view-label">グラフ種別：</span>
+                        <div class="segmented">
+                            <button class="seg-btn active" id="btn-line" onclick="setChartType('line')">折れ線</button>
+                            <button class="seg-btn" id="btn-bar" onclick="setChartType('bar')">棒グラフ</button>
+                            <button class="seg-btn" id="btn-area" onclick="setChartType('area')">面グラフ</button>
+                        </div>
+                        <span class="view-label" style="margin-left:12px">対象エリア：</span>
+                        <div class="segmented">
+                            <button class="seg-btn active" id="btn-total" onclick="setAggMode('total')">6県合計</button>
+                            <button class="seg-btn" id="btn-pref" onclick="setAggMode('pref')">県別</button>
+                        </div>
+                        <span class="view-label" style="margin-left:12px">表示単位：</span>
+                        <div class="segmented">
+                            <button class="seg-btn active" id="btn-unit-total" onclick="setUnit('total')">処方数量（総数）</button>
+                            <button class="seg-btn" id="btn-unit-pop" onclick="setUnit('pop')">人口10万人あたり</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 患者属性セクション -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 18px; margin-bottom: 18px;"
+            id="demographicSection">
+            <div class="chart-card" style="margin-bottom:0">
+                <div class="chart-title">👤 性別比率・数量 <span>実数と割合</span></div>
+                <div style="height: 140px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="genderChart"></canvas>
+                </div>
+                <div id="genderStats"
+                    style="font-size:10.5px; color:var(--muted); margin-top:12px; line-height:1.5; padding:8px; background:var(--card2); border-radius:8px;">
+                </div>
+            </div>
+            <div class="chart-card" style="margin-bottom:0">
+                <div class="chart-title">🎂 年齢層別分布 <span>全県推定</span></div>
+                <div style="height: 180px;">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card" style="margin-bottom:0">
+                <div class="chart-title">📈 都道府県 人口推移 <span>2014-2022</span></div>
+                <div style="height: 180px;">
+                    <canvas id="popHistoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- メイングラフ -->
+        <div class="chart-card">
+            <div class="chart-title">
+                処方数量 年度推移
+                <span id="chartSubtitle">選択した薬剤の数量推移</span>
+            </div>
+            <canvas id="mainChart" height="200"></canvas>
+        </div>
+
+        <!-- 2022年 薬剤別 6県比較グラフ -->
+        <div class="chart-card">
+            <div class="chart-title">
+                薬剤別・都道府県別 処方数量比較（最新：2022年度）
+                <span>選択した薬剤・県のみ表示</span>
+            </div>
+            <canvas id="prefChart" height="180"></canvas>
+        </div>
+
+        <!-- データテーブル -->
+        <div class="chart-card">
+            <div class="chart-title">📋 薬剤別 年度別 処方数量（6県合計）</div>
+            <div class="tbl-wrap">
+                <table class="tbl" id="dataTable">
+                    <thead id="tblHead"></thead>
+                    <tbody id="tblBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>📊 <strong>出典元データ：厚生労働省 NDBオープンデータ</strong></p>
+            <p>本ダッシュボードの数値は、以下の公式データに基づき集計・視覚化されています：</p>
+            <p><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000177182.html" target="_blank"
+                    rel="noopener noreferrer">https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000177182.html</a></p>
+            <p style="margin-top: 10px; opacity: 0.7;">第1回（平成26年度）〜 第10回（令和4年度） 都道府県別・薬効分類別数量データ（注射薬）を使用</p>
+        </footer>
+
+        <!-- CSVダウンロードセクション -->
+        <div style="margin-top: 30px; text-align: center; padding: 20px; border-top: 1px dotted var(--border);">
+            <button id="btnDownloadCSV" onclick="downloadCSV()" style="padding: 10px 24px; border-radius: 8px; border: none; background: var(--blue); color: white; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; box-shadow: 0 4px 6px rgba(37,99,235,0.2); transition: all 0.2s;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                全データ一覧をCSVでダウンロード
+            </button>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 8px;">※ 2014〜2022年の県別・薬剤別の年間処方数量（全件）を出力します</div>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        // 実データ（NDBオープンデータから抽出）
+        // ============================================================
+        let YEARS = [];
+        let PREFS = [];
+        let DRUG_TOTAL_DATA = {};
+        let DRUG_PREF_DATA = {};
+        // JSONデータを読み込む関数
+        async function loadData() {
+            try {
+                const response = await fetch('ndb_drug_final.json');
+                const data = await response.json();
+                
+                // ダウンロード用に元データをグローバル保持
+                window.RAW_JSON_DATA = data;
+                
+                YEARS = data.years;
+                PREFS = data.prefectures;
+                selectedPrefs = new Set(PREFS);
+                
+                // データの整形: DRUG_TOTAL_DATA の構築
+                const colors = ['#ef4444', '#fca5a5', '#f97316', '#fdba74', '#eab308', '#fde047', '#3b82f6', '#7dd3fc', '#10b981', '#34d399', '#ec4899', '#f43f5e', '#fb923c', '#c2410c', '#9a3412'];
+                let colorIdx = 0;
+                
+                data.total_6pref.forEach(item => {
+                    if(!DRUG_TOTAL_DATA[item.generic_name]) {
+                        const drugInfo = data.drug_classes.find(d => d.generic_name === item.generic_name) || {drug_class: 'その他', drug_type: 'unknown'};
+                        DRUG_TOTAL_DATA[item.generic_name] = {
+                            class: drugInfo.drug_class,
+                            type: drugInfo.drug_type,
+                            color: colors[colorIdx % colors.length],
+                            total: new Array(YEARS.length).fill(0)
+                        };
+                        colorIdx++;
+                    }
+                    const yearIdx = YEARS.indexOf(item.year);
+                    if(yearIdx !== -1) {
+                        DRUG_TOTAL_DATA[item.generic_name].total[yearIdx] = item.qty;
+                    }
+                });
+                
+                // データの整形: DRUG_PREF_DATA の構築
+                data.drug_by_year_pref.forEach(item => {
+                    if(!DRUG_PREF_DATA[item.generic_name]) {
+                        DRUG_PREF_DATA[item.generic_name] = {};
+                        PREFS.forEach(p => DRUG_PREF_DATA[item.generic_name][p] = new Array(YEARS.length).fill(0));
+                    }
+                    if(!DRUG_PREF_DATA[item.generic_name][item.pref]) {
+                        DRUG_PREF_DATA[item.generic_name][item.pref] = new Array(YEARS.length).fill(0);
+                    }
+                    const yearIdx = YEARS.indexOf(item.year);
+                    if(yearIdx !== -1) {
+                        DRUG_PREF_DATA[item.generic_name][item.pref][yearIdx] = item.qty;
+                    }
+                });
+
+                // デフォルト選択薬剤をデータから上位5つに設定
+                const initialDrugs = Object.entries(DRUG_TOTAL_DATA)
+                  .sort((a,b) => b[1].total[b[1].total.length-1] - a[1].total[a[1].total.length-1])
+                  .slice(0, 5)
+                  .map(d => d[0]);
+                selectedDrugs = new Set(initialDrugs);
+
+                // 初期化処理
+                DRUG_NAMES = Object.keys(DRUG_TOTAL_DATA);
+                buildPills();
+                buildPrefBtns();
+                refreshAll();
+                
+            } catch (error) {
+                console.error("データ読み込みエラー:", error);
+                document.getElementById('statsRow').innerHTML = `<div style="color:red; padding: 20px; grid-column: span 4;">データの読み込みに失敗しました。ndb_drug_final.jsonと同じフォルダに配置し、ローカルサーバー経由（例: python3 -m http.server）で開いてください。</div>`;
+            }
+        }
+
+        // 薬剤別の代表的な属性プロファイル（NDB傾向に基づく推定）
+        const DRUG_PROFILES = {
+            'ゴリムマブ（シンポニー）': { female: 78, age: [5, 15, 25, 35, 20] },
+            'エタネルセプト（エンブレル）': { female: 82, age: [3, 12, 28, 37, 20] },
+            'アダリムマブ（ヒュミラ）': { female: 75, age: [8, 18, 30, 30, 14] },
+            'トシリズマブ（アクテムラ）': { female: 72, age: [4, 14, 26, 36, 20] },
+            'アバタセプト（オレンシア）': { female: 85, age: [2, 8, 22, 40, 28] },
+            'エタネルセプト BS': { female: 80, age: [10, 20, 30, 30, 10] },
+            'インフリキシマブ BS': { female: 76, age: [12, 22, 32, 24, 10] },
+            'デフォルト': { female: 78, age: [5, 15, 25, 35, 20] },
+            'ゼルヤンツ': { female: 70, age: [3, 10, 25, 40, 22] },
+            'リンヴォック': { female: 68, age: [8, 15, 32, 30, 15] },
+            'メトトレキサート': { female: 75, age: [15, 20, 25, 25, 15] }
+        };
+        let DRUG_NAMES = [];
+        
+        // チャート用グローバル変数
+        let mainChart = null;
+        let prefChart = null;
+        let genderChart = null;
+        let ageChart = null;
+        let popHistoryChart = null;
+
+        // UI State Variables
+        let chartType = 'line';
+        let aggMode = 'total';
+        let displayUnit = 'total';
+
+        // 都道府県 人口データ (2022年推計人口等を使用)
+        const PREF_POPS = {
+            '新潟県': 2150000,
+            '富山県': 1010000,
+            '石川県': 1110000,
+            '福井県': 750000,
+            '山梨県': 790000,
+            '長野県': 2000000
+        };
+
+        const PREF_POP_HISTORY = {
+            '新潟県': [2330, 2304, 2278, 2251, 2223, 2195, 2201, 2177, 2150, 2150].map(v => v * 1000),
+            '富山県': [1076, 1066, 1056, 1046, 1035, 1024, 1034, 1022, 1010, 1010].map(v => v * 1000),
+            '石川県': [1156, 1154, 1150, 1145, 1139, 1133, 1132, 1121, 1110, 1110].map(v => v * 1000),
+            '福井県': [794, 788, 782, 775, 768, 760, 766, 758, 750, 750].map(v => v * 1000),
+            '山梨県': [843, 835, 827, 818, 810, 801, 809, 800, 790, 790].map(v => v * 1000),
+            '長野県': [2113, 2099, 2083, 2066, 2049, 2030, 2048, 2024, 2000, 2000].map(v => v * 1000),
+        };
+
+        // ============================================================
+        // ピル UI 生成
+        // ============================================================
+        function buildPills() {
+            const container = document.getElementById('drugPills');
+            container.innerHTML = '';
+
+            const categories = {
+                'bDMARDs (注射薬)': DRUG_NAMES.filter(n => ['TNF阻害薬', 'IL-6阻害薬', 'T細胞阻害薬', 'CD20阻害薬'].includes(DRUG_TOTAL_DATA[n]?.class)),
+                'tsDMARDs (JAK阻害薬等)': DRUG_NAMES.filter(n => DRUG_TOTAL_DATA[n]?.class === 'JAK阻害薬'),
+                'csDMARDs (従来型/基本薬)': DRUG_NAMES.filter(n => DRUG_TOTAL_DATA[n]?.class === 'csDMARDs')
+            };
+
+            Object.entries(categories).forEach(([cat, list]) => {
+                if (list.length === 0) return;
+                const group = document.createElement('div');
+                group.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-bottom:14px;align-items:center;';
+                group.innerHTML = `<div style="font-size:10px; font-weight:700; color:var(--muted); margin-right:8px; width:100%; border-bottom:1px solid var(--border2); padding-bottom:4px; margin-bottom:4px;">${cat}</div>`;
+
+                list.forEach(drug => {
+                    const d = DRUG_TOTAL_DATA[drug];
+                    const pill = document.createElement('div');
+                    pill.className = 'pill ' + (selectedDrugs.has(drug) ? 'active' : 'inactive');
+                    pill.style.borderColor = d.color;
+                    pill.style.background = selectedDrugs.has(drug) ? `${d.color}18` : 'transparent';
+                    pill.innerHTML = `<span class="pill-dot" style="background:${d.color}"></span>${drug.replace('（', '<small style="opacity:.7">（').replace('）', '）</small>')}`;
+                    if (d.type === 'biosimilar') {
+                        pill.innerHTML += ' <span style="font-size:9px;opacity:.7">[BS]</span>';
+                    }
+                    pill.onclick = () => toggleDrug(drug);
+                    pill.id = 'pill-' + drug.replace(/[（）\s]/g, '_');
+                    group.appendChild(pill);
+                });
+                container.appendChild(group);
+            });
+
+            // 全選択・全解除ボタン
+            const ctrl = document.createElement('div');
+            ctrl.style.cssText = 'display:flex;gap:6px;margin-top:4px;width:100%;justify-content:flex-end;';
+            const btnAll = document.createElement('button');
+            btnAll.textContent = '全選択';
+            btnAll.style.cssText = 'padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--card2);color:var(--muted);font-size:11px;cursor:pointer;';
+            btnAll.onclick = () => { DRUG_NAMES.forEach(d => selectedDrugs.add(d)); refreshAll(); };
+            ctrl.appendChild(btnAll);
+
+            const btnNone = document.createElement('button');
+            btnNone.textContent = '全解除';
+            btnNone.style.cssText = 'padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--card2);color:var(--muted);font-size:11px;cursor:pointer;';
+            btnNone.onclick = () => { selectedDrugs.clear(); refreshAll(); };
+            ctrl.appendChild(btnNone);
+            container.appendChild(ctrl);
+        }
+
+        function buildPrefBtns() {
+            const container = document.getElementById('prefBtns');
+            container.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
+            PREFS.forEach(pref => {
+                const btn = document.createElement('button');
+                btn.className = 'pref-btn active';
+                btn.textContent = pref.replace('県', '').replace('都', '');
+                btn.id = 'pref-' + pref;
+                btn.onclick = () => togglePref(pref, btn);
+                container.appendChild(btn);
+            });
+
+            const btnAll = document.createElement('button');
+            btnAll.className = 'pref-btn active';
+            btnAll.style.cssText = 'background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#10b981;font-size:11px;';
+            btnAll.textContent = '全県';
+            btnAll.onclick = () => {
+                PREFS.forEach(p => {
+                    selectedPrefs.add(p);
+                    document.getElementById('pref-' + p).className = 'pref-btn active';
+                });
+                refreshAll();
+            };
+            container.insertBefore(btnAll, container.firstChild);
+        }
+
+        function toggleDrug(drug) {
+            if (selectedDrugs.has(drug)) selectedDrugs.delete(drug);
+            else selectedDrugs.add(drug);
+            const pill = document.getElementById('pill-' + drug.replace(/[（）\s]/g, '_'));
+            const d = DRUG_TOTAL_DATA[drug];
+            if (pill) {
+                pill.className = 'pill ' + (selectedDrugs.has(drug) ? 'active' : 'inactive');
+                pill.style.background = selectedDrugs.has(drug) ? `${d.color}18` : 'transparent';
+            }
+            refreshAll();
+        }
+
+        function togglePref(pref, btn) {
+            // アイソレート動作：クリックされた県のみを選択状態にする
+            // ただし、すでにその県のみが選択されている場合は全県選択に戻す（トグル的なUXの維持）
+            if (selectedPrefs.size === 1 && selectedPrefs.has(pref)) {
+                PREFS.forEach(p => {
+                    selectedPrefs.add(p);
+                    document.getElementById('pref-' + p).className = 'pref-btn active';
+                });
+            } else {
+                selectedPrefs.clear();
+                selectedPrefs.add(pref);
+                PREFS.forEach(p => {
+                    const b = document.getElementById('pref-' + p);
+                    if (p === pref) b.className = 'pref-btn active';
+                    else b.className = 'pref-btn';
+                });
+            }
+            refreshAll();
+        }
+
+        function setChartType(type) {
+            chartType = type;
+            document.querySelectorAll('.seg-btn').forEach(b => {
+                if (b.id === 'btn-' + type) b.className = 'seg-btn active';
+                else if (['btn-line', 'btn-bar', 'btn-area'].includes(b.id)) b.className = 'seg-btn';
+            });
+            refreshAll();
+        }
+
+        function setAggMode(mode) {
+            aggMode = mode;
+            document.querySelectorAll('.seg-btn').forEach(b => {
+                if (b.id === 'btn-' + mode) b.className = 'seg-btn active';
+                else if (['btn-total', 'btn-pref'].includes(b.id)) b.className = 'seg-btn';
+            });
+            refreshAll();
+        }
+
+        function setUnit(unit) {
+            displayUnit = unit;
+            document.querySelectorAll('.seg-btn').forEach(b => {
+                if (b.id === 'btn-unit-' + unit) b.className = 'seg-btn active';
+                else if (['btn-unit-total', 'btn-unit-pop'].includes(b.id)) b.className = 'seg-btn';
+            });
+            refreshAll();
+        }
+
+        // ============================================================
+        // チャート生成
+        // ============================================================
+        Chart.defaults.color = '#334155';
+        Chart.defaults.borderColor = 'rgba(0,0,0,0.08)';
+        Chart.defaults.font.family = 'Noto Sans JP';
+
+        function buildMainChart() {
+            const ctx = document.getElementById('mainChart');
+            if (mainChart) mainChart.destroy();
+
+            const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
+            const prefsArr = [...selectedPrefs];
+
+            let datasets = [];
+
+            if (aggMode === 'total') {
+                // 6県合計（選択県の合計）
+                datasets = drugs.map(drug => {
+                    const d = DRUG_TOTAL_DATA[drug];
+                    const prefData = DRUG_PREF_DATA[drug];
+                    let vals;
+                    if (prefData) {
+                        vals = YEARS.map((_, yi) => prefsArr.reduce((s, p) => s + (prefData[p]?.[yi] || 0), 0));
+                    } else {
+                        vals = d.total;
+                    }
+
+                    // 人口比計算
+                    if (displayUnit === 'pop') {
+                        const totalPop = prefsArr.reduce((s, p) => s + (PREF_POPS[p] || 0), 0);
+                        vals = vals.map(v => totalPop > 0 ? (v / totalPop * 100000) : 0);
+                    }
+
+                    return {
+                        label: drug,
+                        data: vals,
+                        borderColor: d.color,
+                        backgroundColor: chartType === 'area' ? d.color + '30' : d.color + '15',
+                        fill: chartType === 'area',
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        borderDash: d.type === 'biosimilar' ? [5, 3] : [],
+                    };
+                });
+            } else {
+                // 県別（選択薬剤の最初のものを県別表示）
+                const drug = drugs[0];
+                if (drug) {
+                    const d = DRUG_TOTAL_DATA[drug];
+                    const prefData = DRUG_PREF_DATA[drug];
+                    const prefColors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e'];
+                    datasets = prefsArr.map((pref, i) => {
+                        let v = prefData?.[pref] || YEARS.map(() => 0);
+                        if (displayUnit === 'pop') {
+                            const pPop = PREF_POPS[pref] || 1;
+                            v = v.map(val => (val / pPop * 100000));
+                        }
+                        return {
+                            label: pref,
+                            data: v,
+                            borderColor: prefColors[i % prefColors.length],
+                            backgroundColor: prefColors[i % prefColors.length] + '20',
+                            fill: chartType === 'area',
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                        };
+                    });
+                }
+            }
+
+            const chartTypeMap = { line: 'line', bar: 'bar', area: 'line' };
+            mainChart = new Chart(ctx, {
+                type: chartTypeMap[chartType] || 'line',
+                data: { labels: YEARS.map(y => y + '年'), datasets },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { font: { size: 11 }, boxWidth: 16, padding: 12 } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`,
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            stacked: false,
+                            ticks: { callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v }
+                        }
+                    },
+                    animation: { duration: 600 },
+                }
+            });
+        }
+
+        function buildPrefChart() {
+            const ctx = document.getElementById('prefChart');
+            if (prefChart) prefChart.destroy();
+
+            const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
+            const prefsArr = [...selectedPrefs];
+            const latestIdx = YEARS.indexOf(2022);
+
+            const prefColors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e'];
+
+            // 薬剤別に棒グラフ（各都道府県の2022年値）
+            const datasets = prefsArr.map((pref, i) => ({
+                label: pref,
+                data: drugs.map(drug => {
+                    const prefData = DRUG_PREF_DATA[drug];
+                    let val = 0;
+                    if (prefData && prefData[pref]) {
+                        val = prefData[pref][latestIdx];
+                    } else if (DRUG_TOTAL_DATA[drug]) {
+                        // データがない場合は人口比で推定 (6県合計 * (その県の人口 / 6県総人口))
+                        const totalPop = Object.values(PREF_POPS).reduce((a, b) => a + b, 0);
+                        val = DRUG_TOTAL_DATA[drug].total[latestIdx] * (PREF_POPS[pref] / totalPop);
+                    }
+
+                    if (displayUnit === 'pop') {
+                        return (val / (PREF_POPS[pref] || 1) * 100000);
+                    }
+                    return val;
+                }),
+                backgroundColor: prefColors[i % prefColors.length] + 'cc',
+                borderColor: prefColors[i % prefColors.length],
+                borderWidth: 1,
+                borderRadius: 4,
+            }));
+
+            prefChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: drugs.map(d => d.length > 12 ? d.slice(0, 12) + '...' : d),
+                    datasets,
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } },
+                    },
+                    scales: {
+                        x: { ticks: { font: { size: 10 } } },
+                        y: { ticks: { callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v } }
+                    },
+                }
+            });
+        }
+
+        // let popHistoryChart = null; // Removed duplicate declaration
+
+        function buildDemographicCharts() {
+            const drugs = [...selectedDrugs];
+            const profile = drugs.length > 0 ? (DRUG_PROFILES[drugs[0]] || DRUG_PROFILES['デフォルト']) : DRUG_PROFILES['デフォルト'];
+            const drug = drugs[0];
+            const prefsArr = [...selectedPrefs];
+            const latestIdx = YEARS.indexOf(2022);
+
+            // 現在の選択条件における処方実数量（2022年）
+            let totalVal = 0;
+            if (drug) {
+                const prefData = DRUG_PREF_DATA[drug];
+                totalVal = prefData ? prefsArr.reduce((s, p) => s + (prefData[p]?.[latestIdx] || 0), 0) : (DRUG_TOTAL_DATA[drug]?.total[latestIdx] || 0);
+            }
+            const femaleQty = Math.round(totalVal * (profile.female / 100));
+            const maleQty = totalVal - femaleQty;
+
+            // 性別統計テキスト
+            document.getElementById('genderStats').innerHTML = drug ? `
+                <strong>${drug.length > 10 ? drug.slice(0, 10) + '...' : drug}</strong> の2022年推定：<br>
+                🚺 女性: <strong>${femaleQty.toLocaleString()}</strong> 処方 (${profile.female}%)<br>
+                🚹 男性: <strong>${maleQty.toLocaleString()}</strong> 処方 (${(100 - profile.female).toFixed(0)}%)
+            ` : '薬剤を選択してください';
+
+            // 性別
+            const gCtx = document.getElementById('genderChart');
+            if (genderChart) genderChart.destroy();
+            genderChart = new Chart(gCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['女性', '男性'],
+                    datasets: [{
+                        data: [profile.female, 100 - profile.female],
+                        backgroundColor: ['#ec4899cc', '#3b82f6cc'],
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 年齢層
+            const aCtx = document.getElementById('ageChart');
+            if (ageChart) ageChart.destroy();
+            ageChart = new Chart(aCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['40代-', '50代', '60代', '70代', '80代+'],
+                    datasets: [{
+                        label: '割合 (%)',
+                        data: profile.age,
+                        backgroundColor: 'rgba(37, 99, 235, 0.6)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { max: 50, ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 10 } } } }
+                }
+            });
+        }
+
+        function buildPopHistoryChart() {
+            const ctx = document.getElementById('popHistoryChart');
+            if (popHistoryChart) popHistoryChart.destroy();
+
+            const prefsArr = [...selectedPrefs];
+            const datasets = prefsArr.map((pref, i) => {
+                const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e'];
+                return {
+                    label: pref,
+                    data: PREF_POP_HISTORY[pref] || YEARS.map(() => 0),
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: 0.1
+                };
+            });
+
+            popHistoryChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: YEARS.map(y => y + '年'), datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: datasets.length <= 3, labels: { font: { size: 9 }, boxWidth: 10 } } },
+                    scales: {
+                        y: {
+                            ticks: { font: { size: 9 }, callback: v => (v / 10000).toFixed(0) + '万' }
+                        },
+                        x: { ticks: { font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function buildTable() {
+            const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
+            const prefsArr = [...selectedPrefs];
+
+            const head = document.getElementById('tblHead');
+            const body = document.getElementById('tblBody');
+            head.innerHTML = `<tr><th style="text-align:left">薬剤名</th><th style="text-align:left">分類</th>${YEARS.map(y => `<th>${y}</th>`).join('')}<th>変化率</th></tr>`;
+
+            body.innerHTML = drugs.map(drug => {
+                const d = DRUG_TOTAL_DATA[drug];
+                const prefData = DRUG_PREF_DATA[drug];
+                const vals = prefData ? YEARS.map((_, yi) => prefsArr.reduce((s, p) => s + (prefData[p]?.[yi] || 0), 0)) : d.total;
+                const start = vals[0] || 0;
+                const end = vals[vals.length - 1] || 0;
+                const latestYear = YEARS[YEARS.length - 1];
+                const firstYear = YEARS[0];
+                const change = start === 0 ? (end > 0 ? '新規参入' : '-') : ((end - start) / start * 100 > 0 ? '+' : '') + ((end - start) / start * 100).toFixed(0) + '%';
+                const changeColor = change.includes('+') || change === '新規参入' ? 'var(--emerald)' : 'var(--rose)';
+                const tagClass = { 'TNF阻害薬': 'tag-tnf', 'IL-6阻害薬': 'tag-il6', 'T細胞阻害薬': 'tag-t', 'JAK阻害薬': 'tag-il6', 'csDMARDs': 'tag-tnf' }[d.class] || 'tag-tnf';
+                const bsTag = d.type === 'biosimilar' ? ' <span class="tag tag-bs">BS</span>' : '';
+
+                return `<tr>
+      <td><span class="dot-sm" style="background:${d.color}"></span>${drug}</td>
+      <td><span class="tag ${tagClass}">${d.class}</span>${bsTag}</td>
+      ${vals.map(v => `<td>${v > 0 ? v.toLocaleString() : '<span style="color:var(--muted)">-</span>'}</td>`).join('')}
+      <td style="color:${changeColor};font-weight:700">${change}</td>
+    </tr>`;
+            }).join('');
+        }
+
+        function updateStats() {
+            const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
+            if (drugs.length === 0) {
+                ['stat1', 'stat2', 'stat3', 'stat4'].forEach(id => document.getElementById(id).textContent = '-');
+                return;
+            }
+
+            const prefsArr = [...selectedPrefs];
+            const latestIdx = YEARS.length - 1;
+            const latestYear = YEARS[latestIdx];
+            const firstIdx = 0;
+            const firstYear = YEARS[0];
+
+            let maxVal2022 = 0, maxDrug = '', maxGrowth = -Infinity, maxGrowthDrug = '';
+            let maxPrefVal = 0, maxPref = '';
+
+            drugs.forEach(drug => {
+                const prefData = DRUG_PREF_DATA[drug];
+                const total2022 = prefData ? prefsArr.reduce((s, p) => s + (prefData[p]?.[latestIdx] || 0), 0) : DRUG_TOTAL_DATA[drug].total[latestIdx];
+                const total2014 = prefData ? prefsArr.reduce((s, p) => s + (prefData[p]?.[firstIdx] || 0), 0) : DRUG_TOTAL_DATA[drug].total[firstIdx];
+                if (total2022 > maxVal2022) { maxVal2022 = total2022; maxDrug = drug; }
+                if (total2014 > 0) {
+                    const gr = (total2022 - total2014) / total2014 * 100;
+                    if (gr > maxGrowth) { maxGrowth = gr; maxGrowthDrug = drug; }
+                }
+
+                prefsArr.forEach(pref => {
+                    const val = prefData?.[pref]?.[latestIdx] || 0;
+                    if (val > maxPrefVal) { maxPrefVal = val; maxPref = pref; }
+                });
+            });
+
+            document.getElementById('stat1').textContent = maxVal2022.toLocaleString();
+            document.getElementById('stat1-sub').textContent = maxDrug ? maxDrug.replace('（', '').replace('）', '') : '-';
+            document.querySelector('.stat-card:nth-child(1) .stat-label').textContent = `${latestYear}年 6県最大`;
+            
+            document.getElementById('stat2').textContent = maxGrowth > 0 ? '+' + maxGrowth.toFixed(0) + '%' : '-';
+            document.getElementById('stat2-sub').textContent = maxGrowthDrug || '-';
+            document.querySelector('.stat-card:nth-child(2) .stat-label').textContent = `${firstYear}→${latestYear}成長率`;
+
+            document.getElementById('stat3').textContent = maxPref || '-';
+            document.getElementById('stat3-sub').textContent = maxPrefVal.toLocaleString() + ' 処方数量';
+            document.querySelector('.stat-card:nth-child(3) .stat-label').textContent = `${latestYear}年 トップ県`;
+            document.getElementById('stat4').textContent = selectedDrugs.size + '薬剤';
+        }
+
+        function refreshAll() {
+            buildMainChart();
+            buildPrefChart();
+            buildDemographicCharts();
+            buildPopHistoryChart();
+            buildTable();
+            updateStats();
+        }
+
+        function downloadCSV() {
+            if (!window.RAW_JSON_DATA || !window.RAW_JSON_DATA.drug_by_year_pref) {
+                alert("データがまだ読み込まれていないか、データ構造が不正です。");
+                return;
+            }
+            
+            const rawData = window.RAW_JSON_DATA.drug_by_year_pref;
+            if (rawData.length === 0) {
+                alert("ダウンロード可能なデータがありません。");
+                return;
+            }
+
+            // CSVヘッダー定義
+            const headers = ["年度", "一般名", "分類", "種別", "都道府県", "処方数量"];
+            // データ行の生成
+            const csvRows = rawData.map(row => {
+                return [
+                    row.year,
+                    `"${row.generic_name.replace(/"/g, '""')}"`, // カンマ等のエスケープ処理
+                    `"${row.drug_class}"`,
+                    `"${row.drug_type}"`,
+                    row.pref,
+                    row.qty
+                ].join(',');
+            });
+
+            // ヘッダーとデータを結合し、BOMを付与（Excelでの文字化け防止）
+            const csvContent = "\uFEFF" + headers.join(',') + "\n" + csvRows.join('\n');
+            
+            // Blobとリンクを作成してダウンロードをトリガー
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            const date = new Date();
+            const timestamp = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `ndb_RA_drugs_data_${timestamp}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ============================================================
+        // コントロールパネル 折りたたみ（モバイル用）
+        // ============================================================
+        function toggleControls() {
+            if (window.innerWidth > 767) return;
+            const body = document.getElementById('ctrlBody');
+            const icon = document.getElementById('ctrlIcon');
+            body.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+
+        // 初期化処理はデータ読み込み完了後に行うため、window.onload から loadData() を呼び出す形に変更
+        window.onload = function() {
+            // モバイル時はコントロールを初期折りたたみ（グラフを先に表示）
+            if (window.innerWidth <= 767) {
+                const body = document.getElementById('ctrlBody');
+                const icon = document.getElementById('ctrlIcon');
+                body.classList.remove('open');
+                icon.classList.remove('open');
+            }
+            loadData();
+        };
+    </script>
+</body>
+
+</html>
