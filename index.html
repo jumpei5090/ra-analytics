@@ -602,6 +602,12 @@
             <p class="subtitle">厚生労働省 NDBオープンデータ（第1〜10回）｜新潟・富山・石川・福井・山梨・長野｜2014〜2023年度</p>
         </div>
 
+        <div style="background:linear-gradient(90deg,#065f46,#047857); color:#fff; border-radius:10px; padding:10px 16px; margin-bottom:12px; font-size:12px; line-height:1.7;">
+            🚀 <strong>BS新発売予定</strong>｜
+            <span style="background:rgba(255,255,255,0.15); border-radius:4px; padding:2px 8px; margin:0 4px;">トシリズマブ BS　2026年4月発売</span>
+            <span style="background:rgba(255,255,255,0.15); border-radius:4px; padding:2px 8px; margin:0 4px;">ゴリムマブ BS　2026年5月発売</span>
+        </div>
+
         <div class="data-note">
             📌 <strong>データ出典</strong>：厚生労働省 NDBオープンデータ 注射薬・都道府県別薬効分類別数量（第1〜10回）から実際にダウンロード・集計<br>
             📌 薬効分類 <strong>239・399・639</strong> から主要リウマチ生物学的製剤11薬剤を抽出（先発品・バイオシミラー別）<br>
@@ -616,11 +622,6 @@
                 <div class="stat-sub" id="stat1-sub">選択薬剤の最大処方量</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">8年成長率（最大）</div>
-                <div class="stat-value" id="stat2" style="color:var(--emerald)">-</div>
-                <div class="stat-sub" id="stat2-sub">2014→2022変化率</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-label">2022年 トップ県</div>
                 <div class="stat-value" id="stat3" style="color:var(--blue);">-</div>
                 <div class="stat-sub" id="stat3-sub">最大処方量の都道府県</div>
@@ -629,6 +630,11 @@
                 <div class="stat-label">表示中の薬剤数</div>
                 <div class="stat-value" id="stat4" style="color:var(--amber)">-</div>
                 <div class="stat-sub">選択薬剤数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label" id="bsShareLabel">BSシェア率</div>
+                <div class="stat-value" id="statBS" style="color:var(--emerald)">-</div>
+                <div class="stat-sub" id="statBS-sub">選択薬剤中のBS処方割合</div>
             </div>
         </div>
 
@@ -656,7 +662,7 @@
                         </div>
                         <span class="view-label" style="margin-left:12px">対象エリア：</span>
                         <div class="segmented">
-                            <button class="seg-btn active" id="btn-total" onclick="setAggMode('total')">6県合計</button>
+                            <button class="seg-btn active" id="btn-total" onclick="setAggMode('total')">選択県合計</button>
                             <button class="seg-btn" id="btn-pref" onclick="setAggMode('pref')">県別</button>
                         </div>
                         <span class="view-label" style="margin-left:12px">表示単位：</span>
@@ -682,7 +688,7 @@
                 </div>
             </div>
             <div class="chart-card" style="margin-bottom:0">
-                <div class="chart-title">🎂 年齢層別分布 <span>全県推定</span></div>
+                <div class="chart-title">🎂 年齢層別分布 <span id="ageDataSourceLabel">読み込み中...</span></div>
                 <div style="height: 180px;">
                     <canvas id="ageChart"></canvas>
                 </div>
@@ -715,7 +721,7 @@
 
         <!-- データテーブル -->
         <div class="chart-card">
-            <div class="chart-title">📋 薬剤別 年度別 処方数量（6県合計）</div>
+            <div class="chart-title">📋 薬剤別 年度別 処方数量（<span id="tablePrefLabel">選択県合計</span>）</div>
             <div class="tbl-wrap">
                 <table class="tbl" id="dataTable">
                     <thead id="tblHead"></thead>
@@ -754,8 +760,14 @@
         // JSONデータを読み込む関数
         async function loadData() {
             try {
-                const response = await fetch('ndb_drug_final.json');
+                const [response, ageResponse] = await Promise.all([
+                    fetch('ndb_drug_final.json'),
+                    fetch('ndb_age_final.json').catch(() => null)
+                ]);
                 const data = await response.json();
+                if (ageResponse && ageResponse.ok) {
+                    NDB_AGE_DATA = await ageResponse.json();
+                }
                 
                 // ダウンロード用に元データをグローバル保持
                 window.RAW_JSON_DATA = data;
@@ -800,12 +812,9 @@
                     }
                 });
 
-                // デフォルト選択薬剤をデータから上位5つに設定
-                const initialDrugs = Object.entries(DRUG_TOTAL_DATA)
-                  .sort((a,b) => b[1].total[b[1].total.length-1] - a[1].total[a[1].total.length-1])
-                  .slice(0, 5)
-                  .map(d => d[0]);
-                selectedDrugs = new Set(initialDrugs);
+                // デフォルト選択薬剤: ゴリムマブ（シンポニー）のみ
+                const defaultDrug = 'ゴリムマブ（シンポニー）';
+                selectedDrugs = new Set(DRUG_TOTAL_DATA[defaultDrug] ? [defaultDrug] : []);
 
                 // 初期化処理
                 DRUG_NAMES = Object.keys(DRUG_TOTAL_DATA);
@@ -834,7 +843,8 @@
             'メトトレキサート': { female: 75, age: [15, 20, 25, 25, 15] }
         };
         let DRUG_NAMES = [];
-        
+        let NDB_AGE_DATA = {};  // 年齢層別処方データ（全国）
+
         // チャート用グローバル変数
         let mainChart = null;
         let prefChart = null;
@@ -1011,12 +1021,24 @@
         Chart.defaults.borderColor = 'rgba(0,0,0,0.08)';
         Chart.defaults.font.family = 'Noto Sans JP';
 
+        function getPrefLabel() {
+            const all = PREFS ? PREFS.length : 6;
+            const sel = selectedPrefs.size;
+            if (sel === all) return `全${all}県合計`;
+            if (sel === 1) return [...selectedPrefs][0];
+            return `選択${sel}県合計`;
+        }
+
         function buildMainChart() {
             const ctx = document.getElementById('mainChart');
             if (mainChart) mainChart.destroy();
 
             const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
             const prefsArr = [...selectedPrefs];
+
+            // チャートサブタイトル更新
+            const sub = document.getElementById('chartSubtitle');
+            if (sub) sub.textContent = getPrefLabel();
 
             let datasets = [];
 
@@ -1201,26 +1223,53 @@
                 }
             });
 
-            // 年齢層
+            // 年齢層（NDB実データ or フォールバック）
+            const AGE_LABELS = ['40歳未満', '40-49歳', '50-59歳', '60-69歳', '70-79歳', '80歳以上'];
+            let ageData = null;
+            let ageDataSource = '推定';
+            if (drug && Object.keys(NDB_AGE_DATA).length > 0) {
+                // 最新年から遡って該当薬剤のデータを探す
+                const sortedYears = Object.keys(NDB_AGE_DATA).map(Number).sort((a,b) => b - a);
+                for (const yr of sortedYears) {
+                    if (NDB_AGE_DATA[String(yr)] && NDB_AGE_DATA[String(yr)][drug]) {
+                        const pct = NDB_AGE_DATA[String(yr)][drug].pct;
+                        ageData = AGE_LABELS.map(l => pct[l] || 0);
+                        ageDataSource = `全国NDBデータ (${yr}年度)`;
+                        break;
+                    }
+                }
+            }
+            // フォールバック: DRUG_PROFILESの推定値（5グループ→6グループに0補完）
+            if (!ageData) {
+                const fallback = profile.age || [5, 15, 25, 35, 20];
+                ageData = [fallback[0] || 0, fallback[1] || 0, fallback[2] || 0, fallback[3] || 0, fallback[4] || 0, 0];
+            }
+
             const aCtx = document.getElementById('ageChart');
             if (ageChart) ageChart.destroy();
             ageChart = new Chart(aCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['40代-', '50代', '60代', '70代', '80代+'],
+                    labels: AGE_LABELS,
                     datasets: [{
                         label: '割合 (%)',
-                        data: profile.age,
+                        data: ageData,
                         backgroundColor: 'rgba(37, 99, 235, 0.6)',
                         borderRadius: 4
                     }]
                 },
                 options: {
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { x: { max: 50, ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 10 } } } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toFixed(1)}%` } }
+                    },
+                    scales: { x: { max: 50, ticks: { font: { size: 9 }, callback: v => v + '%' } }, y: { ticks: { font: { size: 10 } } } }
                 }
             });
+            // データソース表示更新
+            const ageLabel = document.getElementById('ageDataSourceLabel');
+            if (ageLabel) ageLabel.textContent = ageDataSource;
         }
 
         function buildPopHistoryChart() {
@@ -1261,20 +1310,18 @@
             const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
             const prefsArr = [...selectedPrefs];
 
+            // 表タイトルの県ラベル更新
+            const tbl = document.getElementById('tablePrefLabel');
+            if (tbl) tbl.textContent = getPrefLabel();
+
             const head = document.getElementById('tblHead');
             const body = document.getElementById('tblBody');
-            head.innerHTML = `<tr><th style="text-align:left">薬剤名</th><th style="text-align:left">分類</th>${YEARS.map(y => `<th>${y}</th>`).join('')}<th>変化率</th></tr>`;
+            head.innerHTML = `<tr><th style="text-align:left">薬剤名</th><th style="text-align:left">分類</th>${YEARS.map(y => `<th>${y}</th>`).join('')}</tr>`;
 
             body.innerHTML = drugs.map(drug => {
                 const d = DRUG_TOTAL_DATA[drug];
                 const prefData = DRUG_PREF_DATA[drug];
                 const vals = prefData ? YEARS.map((_, yi) => prefsArr.reduce((s, p) => s + (prefData[p]?.[yi] || 0), 0)) : d.total;
-                const start = vals[0] || 0;
-                const end = vals[vals.length - 1] || 0;
-                const latestYear = YEARS[YEARS.length - 1];
-                const firstYear = YEARS[0];
-                const change = start === 0 ? (end > 0 ? '新規参入' : '-') : ((end - start) / start * 100 > 0 ? '+' : '') + ((end - start) / start * 100).toFixed(0) + '%';
-                const changeColor = change.includes('+') || change === '新規参入' ? 'var(--emerald)' : 'var(--rose)';
                 const tagClass = { 'TNF阻害薬': 'tag-tnf', 'IL-6阻害薬': 'tag-il6', 'T細胞阻害薬': 'tag-t', 'JAK阻害薬': 'tag-il6', 'csDMARDs': 'tag-tnf' }[d.class] || 'tag-tnf';
                 const bsTag = d.type === 'biosimilar' ? ' <span class="tag tag-bs">BS</span>' : '';
 
@@ -1282,7 +1329,6 @@
       <td><span class="dot-sm" style="background:${d.color}"></span>${drug}</td>
       <td><span class="tag ${tagClass}">${d.class}</span>${bsTag}</td>
       ${vals.map(v => `<td>${v > 0 ? v.toLocaleString() : '<span style="color:var(--muted)">-</span>'}</td>`).join('')}
-      <td style="color:${changeColor};font-weight:700">${change}</td>
     </tr>`;
             }).join('');
         }
@@ -1290,7 +1336,7 @@
         function updateStats() {
             const drugs = [...selectedDrugs].filter(d => DRUG_TOTAL_DATA[d]);
             if (drugs.length === 0) {
-                ['stat1', 'stat2', 'stat3', 'stat4'].forEach(id => document.getElementById(id).textContent = '-');
+                ['stat1', 'stat3', 'stat4', 'statBS'].forEach(id => document.getElementById(id).textContent = '-');
                 return;
             }
 
@@ -1300,18 +1346,13 @@
             const firstIdx = 0;
             const firstYear = YEARS[0];
 
-            let maxVal2022 = 0, maxDrug = '', maxGrowth = -Infinity, maxGrowthDrug = '';
+            let maxVal2022 = 0, maxDrug = '';
             let maxPrefVal = 0, maxPref = '';
 
             drugs.forEach(drug => {
                 const prefData = DRUG_PREF_DATA[drug];
                 const total2022 = prefData ? prefsArr.reduce((s, p) => s + (prefData[p]?.[latestIdx] || 0), 0) : DRUG_TOTAL_DATA[drug].total[latestIdx];
-                const total2014 = prefData ? prefsArr.reduce((s, p) => s + (prefData[p]?.[firstIdx] || 0), 0) : DRUG_TOTAL_DATA[drug].total[firstIdx];
                 if (total2022 > maxVal2022) { maxVal2022 = total2022; maxDrug = drug; }
-                if (total2014 > 0) {
-                    const gr = (total2022 - total2014) / total2014 * 100;
-                    if (gr > maxGrowth) { maxGrowth = gr; maxGrowthDrug = drug; }
-                }
 
                 prefsArr.forEach(pref => {
                     const val = prefData?.[pref]?.[latestIdx] || 0;
@@ -1321,16 +1362,25 @@
 
             document.getElementById('stat1').textContent = maxVal2022.toLocaleString();
             document.getElementById('stat1-sub').textContent = maxDrug ? maxDrug.replace('（', '').replace('）', '') : '-';
-            document.querySelector('.stat-card:nth-child(1) .stat-label').textContent = `${latestYear}年 6県最大`;
-            
-            document.getElementById('stat2').textContent = maxGrowth > 0 ? '+' + maxGrowth.toFixed(0) + '%' : '-';
-            document.getElementById('stat2-sub').textContent = maxGrowthDrug || '-';
-            document.querySelector('.stat-card:nth-child(2) .stat-label').textContent = `${firstYear}→${latestYear}成長率`;
+            document.querySelector('.stat-card:nth-child(1) .stat-label').textContent = `${latestYear}年 最大処方量`;
 
             document.getElementById('stat3').textContent = maxPref || '-';
             document.getElementById('stat3-sub').textContent = maxPrefVal.toLocaleString() + ' 処方数量';
-            document.querySelector('.stat-card:nth-child(3) .stat-label').textContent = `${latestYear}年 トップ県`;
+            document.querySelector('.stat-card:nth-child(2) .stat-label').textContent = `${latestYear}年 トップ県`;
             document.getElementById('stat4').textContent = selectedDrugs.size + '薬剤';
+
+            // BSシェア率計算（選択薬剤中のバイオシミラー処方割合）
+            let totalQty = 0, bsQty = 0;
+            drugs.forEach(drug => {
+                const prefData = DRUG_PREF_DATA[drug];
+                const qty = prefData ? prefsArr.reduce((s, p) => s + (prefData[p]?.[latestIdx] || 0), 0) : DRUG_TOTAL_DATA[drug].total[latestIdx];
+                totalQty += qty;
+                if (DRUG_TOTAL_DATA[drug]?.type === 'biosimilar') bsQty += qty;
+            });
+            const bsPct = totalQty > 0 ? (bsQty / totalQty * 100).toFixed(1) : null;
+            document.getElementById('statBS').textContent = bsPct !== null ? bsPct + '%' : '-';
+            document.getElementById('statBS-sub').textContent = bsPct !== null ? `BS: ${bsQty.toLocaleString()} / 全体: ${totalQty.toLocaleString()}` : '選択薬剤にBSなし';
+            document.getElementById('bsShareLabel').textContent = `${latestYear}年 BSシェア率`;
         }
 
         function refreshAll() {
